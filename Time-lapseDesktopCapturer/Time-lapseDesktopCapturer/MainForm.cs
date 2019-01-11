@@ -14,6 +14,15 @@ namespace Time_lapseDesktopCapturer
 {
     public partial class MainForm : Form
     {
+        private const string KeyInterval = "Interval";
+        private const string KeyScale = "Scale";
+        private const string KeyAbsoluteWidth = "AbsoluteWidth";
+        private const string KeyAbsoluteHeight = "AbsoluteHeight";
+        private const string KeyUseAbsoluteSize = "UseAbsoluteSize";
+        private const string KeyFixAspectRatio = "FixAspectRatio";
+        private const string KeyFormatIndex = "SaveFormatIndex";
+        private const string KeySaveDirectory = "SaveDirectory";
+
         private bool _isRunning;
         private Size _screenSize;
         private Size _absoluteSize;
@@ -27,6 +36,11 @@ namespace Time_lapseDesktopCapturer
             InitializeAbsoluteSize();
             InitializeSaveDirectory();
             AddFormatsToComboBox();
+
+            textBoxInterval.Text = Properties.Settings.Default[KeyInterval].ToString();
+            textBoxScale.Text = Properties.Settings.Default[KeyScale].ToString();
+            checkBoxAbsoluteSize.Checked = (bool)Properties.Settings.Default[KeyUseAbsoluteSize];
+            checkBoxFixAspectRatio.Checked = (bool)Properties.Settings.Default[KeyFixAspectRatio];
         }
 
         private void CheckBoxAbsoluteSize_CheckedChanged(object sender, EventArgs e)
@@ -46,25 +60,41 @@ namespace Time_lapseDesktopCapturer
             comboBoxFormat.Items.Add(ImageFormat.Jpeg);
             comboBoxFormat.Items.Add(ImageFormat.Bmp);
             comboBoxFormat.Items.Add(ImageFormat.Gif);
-            comboBoxFormat.SelectedIndex = 0;
+            int indexSetting = (int)Properties.Settings.Default[KeyFormatIndex];
+            if (indexSetting == -1)
+            {
+                comboBoxFormat.SelectedIndex = 0;
+            } else
+            {
+                comboBoxFormat.SelectedIndex = indexSetting;
+            }
         }
 
         private void InitializeAbsoluteSize ()
         {
-            _absoluteSize = new Size(_screenSize.Width, _screenSize.Height);
+            int widthSetting = (int)Properties.Settings.Default[KeyAbsoluteWidth];
+            int heightSetting = (int)Properties.Settings.Default[KeyAbsoluteHeight];
+            if (widthSetting == -1 || heightSetting == -1)
+            {
+                _absoluteSize = new Size(_screenSize.Width, _screenSize.Height);
+            } else
+            {
+                _absoluteSize = new Size(widthSetting, heightSetting);
+            }
             textBoxWidth.Text = _absoluteSize.Width.ToString();
             textBoxHeight.Text = _absoluteSize.Height.ToString();
         }
 
         private void InitializeSaveDirectory ()
         {
-            string myDocumentPath = Environment.GetFolderPath(Environment.SpecialFolder.Personal);
-            textBoxSaveDir.Text = myDocumentPath;
-        }
-
-        private void InitializeSaveFormat ()
-        {
-            comboBoxFormat.Text = comboBoxFormat.Items[0].ToString();
+            string pathSetting = (string)Properties.Settings.Default[KeySaveDirectory];
+            if (pathSetting == "")
+            {
+                textBoxSaveDir.Text = Environment.GetFolderPath(Environment.SpecialFolder.Personal);
+            } else
+            {
+                textBoxSaveDir.Text = pathSetting;
+            }
         }
 
         private void EnableAbsoluteSize ()
@@ -145,7 +175,7 @@ namespace Time_lapseDesktopCapturer
             timer.Tick += new EventHandler((sender, e) =>
             {
                 // ファイル名はミリ秒までの現在時刻
-                string fileName = DateTime.Now.ToString("yyyyMMddhhmmssfff") + FormatExtention(format);
+                string fileName = DateTime.Now.ToString("yyyyMMddHHmmssfff") + FormatExtention(format);
                 string path = Path.Combine(dirPath, fileName);
                 
                 capturer.CaptureAndSaveDesktop(path, format);
@@ -238,6 +268,35 @@ namespace Time_lapseDesktopCapturer
             {
                 adjustHeightToWidth();
             }
+        }
+
+        private void MainForm_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            Properties.Settings settings = Properties.Settings.Default;
+
+            int interval;
+            if (int.TryParse(textBoxInterval.Text, out interval))
+            {
+                settings[KeyInterval] = interval;
+
+            }
+
+            double scale;
+            if (double.TryParse(textBoxScale.Text, out scale))
+            {
+                settings[KeyScale] = scale;
+            }
+
+            settings[KeyAbsoluteWidth] = _absoluteSize.Width;
+            settings[KeyAbsoluteHeight] = _absoluteSize.Height;
+
+            settings[KeyUseAbsoluteSize] = checkBoxAbsoluteSize.Checked;
+            settings[KeyFixAspectRatio] = checkBoxFixAspectRatio.Checked;
+
+            settings[KeyFormatIndex] = comboBoxFormat.SelectedIndex;
+            settings[KeySaveDirectory] = textBoxSaveDir.Text;
+
+            settings.Save();
         }
     }
 }

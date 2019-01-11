@@ -254,6 +254,7 @@
             this.MainMenuStrip = this.menu;
             this.Name = "MainForm";
             this.Text = "Time-lapseDesktopCapturer";
+            this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.MainForm_FormClosed);
             this.panelAbsoluteSize.ResumeLayout(false);
             this.panelAbsoluteSize.PerformLayout();
             this.panelForm.ResumeLayout(false);
